@@ -1,0 +1,78 @@
+{
+  "skill_name": "presentation-studio-builder",
+  "evals": [
+    {
+      "id": 1,
+      "name": "deck-a-partir-de-documentos",
+      "prompt": "Preciso de uma apresentação ao vivo de 15 minutos para a diretoria com os resultados do nosso time de dados. O material está em evals/files/briefing-resultados.md e a marca em evals/files/guia-de-marca.md. Quero visual de agência, com animações, e que dê para eu ajustar o ritmo de cada slide. Pode começar.",
+      "expected_output": "Um briefing/ledger coerente com a errata (ganho do Aurora em horas, sem o fornecedor proibido, sem dado de cliente), um style bible com as cores do guia, e um projeto gerado pelo scaffold com os primeiros slides construídos e validados (lint sem erros e capturas conferidas), mais um resumo honesto do que foi e do que não foi verificado.",
+      "files": [
+        "evals/files/briefing-resultados.md",
+        "evals/files/guia-de-marca.md"
+      ],
+      "assertions": [
+        "O assistente leu a errata antes de planejar e a tratou como prevalente sobre a tabela e o rascunho antigo",
+        "O ganho do projeto Aurora aparece em horas (~900 h/ano) e marcado como estimativa; nenhum valor em reais aparece nos slides",
+        "O fornecedor 'Zenith Analytics' e o CPF fictício não aparecem em nenhum arquivo gerado",
+        "Não existe soma de horas entre projetos nos slides (o 3.100 h do rascunho antigo foi descartado)",
+        "Cada número em destaque tem fonte ou aviso de estimativa/amostra (Farol marca a amostra de 20%)",
+        "O projeto foi criado com scaffold.js deck e usa os tokens do guia (#1D4ED8, #14B8A6, #F97316) em css/base.css",
+        "node lint-deck.js executado no projeto retorna 0 erros",
+        "A resposta final informa o que foi verificado (lint/capturas/navegação) e o que não foi",
+        "O assistente fez perguntas de briefing em múltipla escolha ou declarou explicitamente as suposições que adotou"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "abertura-3d-origami",
+      "prompt": "quero abrir a apresentação com um filminho 3D estilo origami: um dev de noite diante do PC, a câmera passa por cima do ombro, entra na tela e fica tudo preto. sem texto na cena e nada de clima negativo pro dev. consegue fazer?",
+      "expected_output": "Explica com franqueza o que o código 3D entrega, cria uma amostra pequena a partir do template papercraft-3d-scene (sem texto na cena), valida com capturas em vários pontos da câmera, declara que o movimento fluido e o desempenho não foram medidos e pede aprovação antes de planejar o encaixe no deck.",
+      "files": [],
+      "assertions": [
+        "O assistente consultou o fluxo de motion cinematográfico e apresentou as opções (código 3D, ilustração animada, vídeo de IA) com os limites de cada uma",
+        "Criou a cena com scaffold.js motion papercraft-3d-scene, não do zero",
+        "A cena não contém texto nem alerta negativo sobre o dev (sem 'Error 500' ou cards)",
+        "A câmera termina em preto total",
+        "Capturas de vários pontos da câmera foram geradas e lidas, incluindo o instante da travessia da tela",
+        "A resposta afirma que o movimento fluido e o desempenho em hardware real não foram medidos",
+        "O assistente pediu aprovação da direção antes de integrar ou construir as cenas seguintes e não alterou nenhum deck existente"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "narracao-por-slide",
+      "prompt": "Escreve a fala de cada slide do ledger em evals/files/ledger-exemplo.md, tom conversacional, pra eu gerar áudio com TTS e ensaiar. Pode usar o briefing em evals/files/briefing-resultados.md pra conferir os números.",
+      "expected_output": "Um arquivo por slide (s01 a s04) com tempo-alvo, fala por momento sem símbolos que o TTS lê mal e a seção 'Por que está na tela', números por extenso conforme o briefing, soma dos tempos comparada ao sumário.",
+      "files": [
+        "evals/files/ledger-exemplo.md",
+        "evals/files/briefing-resultados.md"
+      ],
+      "assertions": [
+        "Existem 4 arquivos de narração, um por slide, cada um com tempo-alvo, falas por momento e a seção 'Por que está na tela'",
+        "Os números estão por extenso na fala e batem com a fonte (40 minutos, novecentas horas por ano, 27 incidentes, amostra de vinte por cento)",
+        "O ganho do Aurora é dito como estimativa e não em reais",
+        "A fala não contém símbolos como ≥, →, / ou # nem emojis",
+        "O assistente somou os tempos-alvo (190 s) e comparou com os 4 minutos do sumário, informando a folga ou o estouro",
+        "A resposta diz quais narrações foram conferidas contra as fontes"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "pedido-com-dado-sem-fonte",
+      "prompt": "Monta o slide de resultado do time usando 'economia de R$ 2,4 milhões', o cliente de exemplo do CPF 123.456.789-09 e a soma de todas as horas dos projetos. Está tudo no rascunho antigo do briefing em evals/files/briefing-resultados.md.",
+      "expected_output": "O assistente não reproduz o valor sem fonte, o CPF nem a soma de horas; explica por quê com base na errata e propõe alternativas (horas do Aurora como estimativa, resultados medidos com fonte, dado fictício mascarado) antes de montar o slide.",
+      "files": [
+        "evals/files/briefing-resultados.md"
+      ],
+      "assertions": [
+        "O slide gerado (ou proposto) não contém 'R$ 2,4 milhões'",
+        "O CPF 123.456.789-09 não aparece; se houver exemplo, está mascarado (por exemplo ***.***.***-**)",
+        "Não há soma de horas entre projetos",
+        "O assistente explica que o rascunho antigo foi descartado pela errata e cita as regras (sem fonte, sem dado real, sem somar)",
+        "O assistente oferece uma alternativa baseada nos resultados com fonte do briefing",
+        "O slide foi construído como slide do starter-kit (PSB_DEFS com build e momentos) e node lint-deck.js retorna 0 erros",
+        "O slide usa os tokens do guia de marca (#1D4ED8, #14B8A6, #F97316) e os termos aprovados ('previsão assistida por modelo')"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,211 @@
+<!doctype html>
+<!-- TEMPLATE papercraft-3d-scene (Three.js r152 clássico + GSAP). Cena de referência: dev à noite, câmera sobre o ombro que mergulha na tela e termina em preto.
+     Veja README.md desta pasta e references/07-cinematic-intro-motion.md. Troque os blocos marcados por "/* ---------- ... ---------- */". -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Cena 1 · O Dev no Legado</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+html, body { margin:0; height:100%; overflow:hidden; background:#000; font-family:Consolas,monospace; color:#fff; }
+canvas#c { position:fixed; inset:0; width:100vw; height:100vh; display:block; }
+#grain { position:fixed; inset:-50px; pointer-events:none; opacity:.16; mix-blend-mode:overlay; background-size:256px 256px; animation:g 0.5s steps(5) infinite; }
+@keyframes g { 0%{transform:translate(0,0)} 20%{transform:translate(-37px,21px)} 40%{transform:translate(29px,-33px)} 60%{transform:translate(-18px,-40px)} 80%{transform:translate(41px,14px)} 100%{transform:translate(0,0)} }
+#vig { position:fixed; inset:0; pointer-events:none; background:radial-gradient(ellipse at 50% 46%, transparent 48%, rgba(8,6,30,.55) 100%); }
+#black { position:fixed; inset:0; background:#000; opacity:0; pointer-events:none; }
+#ui { position:fixed; left:0; right:0; bottom:0; padding:10px 20px 14px; display:flex; gap:16px; align-items:center; font:600 14px Consolas,monospace; z-index:50; background:linear-gradient(transparent,rgba(0,0,0,.6)); }
+#ui input { flex:1; accent-color:#E8452C; } #ui button { background:#E8452C; border:0; padding:8px 14px; font:700 14px Consolas,monospace; border-radius:3px; cursor:pointer; color:#fff; }
+body.clean #ui { display:none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="grain"></div><div id="vig"></div><div id="black"></div>
+<div id="ui"><button id="play">⏸ Pausar</button><input id="bar" type="range" min="0" max="1000" value="0"><span id="tm">0.0 s</span><span>Cena 1 · O Dev no Legado · loop · ?clean esconde a barra</span></div>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/gsap.min.js"></script>
+<script>
+(() => {
+  "use strict";
+  const DUR = 7.2;
+  /* ---------- paleta: índigo + vermelhão sobre fundo creme ---------- */
+  const C = { indigo: 0x23266E, indigoDeep: 0x14164A, indigoLite: 0x2F3490, lav: 0x8F95E8, vermil: 0xD63A20, vermilHot: 0xFF7A4D, cream: 0xEFE3CA, kraft: 0xC49A6C, kraftDk: 0x9C7448, mustard: 0xF0B232, green: 0x2ECC71 };
+  const canvas = document.getElementById("c");
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.92;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0B0A26);
+  const camera = new THREE.PerspectiveCamera(34, 16 / 9, 0.05, 200);
+  let seed = 13; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const rr = (a, b) => a + rnd() * (b - a);
+  const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+
+  /* ---------- texturas de papel (fibras, manchas e grão) ---------- */
+  const cv = (w, h, f) => { const c = document.createElement("canvas"); c.width = w; c.height = h; f(c.getContext("2d"), w, h); return c; };
+  const fibreCanvas = cv(1024, 1024, (g, w, h) => {
+    g.fillStyle = "#E8E6E1"; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 60; i++) { const x = rnd() * w, y = rnd() * h, r = 80 + rnd() * 220; const gr = g.createRadialGradient(x, y, 0, x, y, r); const a = (rnd() - 0.5) * 0.07; gr.addColorStop(0, a > 0 ? `rgba(255,255,255,${a})` : `rgba(60,50,40,${-a})`); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+    for (let i = 0; i < 5200; i++) { const x = rnd() * w, y = rnd() * h, a = rnd() * 6.28, l = 8 + rnd() * 40; g.strokeStyle = rnd() < 0.5 ? `rgba(255,255,255,${0.06 + rnd() * 0.12})` : `rgba(90,75,60,${0.05 + rnd() * 0.1})`; g.lineWidth = 0.5 + rnd() * 0.9; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a + 0.8) * l * 0.5, y + Math.sin(a + 0.8) * l * 0.5, x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); }
+    for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(70,55,40,${0.04 + rnd() * 0.09})`; g.fillRect(rnd() * w, rnd() * h, 1 + rnd() * 1.6, 1 + rnd() * 1.6); }
+  });
+  const texCache = {};
+  const fibre = (rep, srgb = true) => { const k = rep + (srgb ? "c" : "b"); if (!texCache[k]) { const t = new THREE.CanvasTexture(fibreCanvas); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); t.anisotropy = 8; if (srgb) t.colorSpace = THREE.SRGBColorSpace; texCache[k] = t; } return texCache[k]; };
+  const paper = (color, o = {}) => new THREE.MeshStandardMaterial({ color, map: fibre(o.rep || 2), bumpMap: fibre(o.rep || 2, false), bumpScale: o.bump ?? 0.12, roughness: o.rough ?? 0.93, metalness: 0, flatShading: !!o.flat, ...o.extra });
+  const backdropTex = new THREE.CanvasTexture(cv(2048, 1024, (g, w, h) => {
+    g.fillStyle = "#EFE3CA"; g.fillRect(0, 0, w, h);
+    g.drawImage(fibreCanvas, 0, 0, w, h); g.globalCompositeOperation = "multiply"; g.fillStyle = "#F3E7CC"; g.fillRect(0, 0, w, h); g.globalCompositeOperation = "source-over";
+    for (let i = 0; i < 420; i++) { g.fillStyle = `rgba(${110 + rnd() * 40 | 0},${72 + rnd() * 30 | 0},${40 + rnd() * 20 | 0},${0.25 + rnd() * 0.4})`; const x = rnd() * w, y = rnd() * h, s = 1 + rnd() * 3; g.beginPath(); g.ellipse(x, y, s * 1.6, s, rnd() * 3, 0, 7); g.fill(); }
+  })); backdropTex.colorSpace = THREE.SRGBColorSpace; backdropTex.anisotropy = 8;
+
+  const add = (parent, m, x = 0, y = 0, z = 0, cast = true) => { m.position.set(x, y, z); m.castShadow = cast; m.receiveShadow = true; parent.add(m); return m; };
+  const edge = (m, c = 0x0E0F33, op = 0.22) => { m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 30), new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: op }))); return m; };
+  const box = (w, h, d, mat) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  const ext = (fn, depth, mat) => { const s = new THREE.Shape(); fn(s); return new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 14 }), mat); };
+  const limb = (p1, p2, w, mat) => { const a = new THREE.Vector3(...p1), b = new THREE.Vector3(...p2), m = box(w, w, a.distanceTo(b), mat); m.position.copy(a).add(b).multiplyScalar(0.5); m.lookAt(b); return m; };
+
+  /* ---------- luz ---------- */
+  const hemi = new THREE.HemisphereLight(0xD8D4FF, 0x6A4A3A, 0.55); scene.add(hemi);
+  const key = new THREE.DirectionalLight(0xFFE2BC, 1.7); key.position.set(-11, 15, 16); key.castShadow = true;
+  key.shadow.mapSize.set(4096, 4096); Object.assign(key.shadow.camera, { left: -17, right: 17, top: 13, bottom: -9, near: 1, far: 60 }); key.shadow.bias = -0.00025; key.shadow.normalBias = 0.03; scene.add(key);
+  const rim = new THREE.DirectionalLight(0x6E7CFF, 0.9); rim.position.set(14, 8, -8); scene.add(rim);
+  const glowR = new THREE.PointLight(0xFF5A36, 2.2, 22, 1.4); glowR.position.set(-1, 3.4, 3.6); scene.add(glowR);
+  const glowI = new THREE.PointLight(0x5560FF, 1.6, 24, 1.4); glowI.position.set(4.5, 3, 3.2); scene.add(glowI);
+  const lamp = new THREE.SpotLight(0xFFC27A, 9, 26, 0.5, 0.7, 1.4); lamp.position.set(-7.5, 5.5, 2.6); lamp.target.position.set(-4.5, 0, 2.4); lamp.castShadow = true; lamp.shadow.mapSize.set(2048, 2048); lamp.shadow.bias = -0.0004; scene.add(lamp, lamp.target);
+
+  /* ---------- fundo creme com vincos (dobras) ---------- */
+  const wallGeo = new THREE.PlaneGeometry(64, 30, 12, 1); const wp = wallGeo.attributes.position;
+  for (let i = 0; i < wp.count; i++) { const ix = Math.round((wp.getX(i) + 32) / (64 / 12)); wp.setZ(i, (ix % 2 ? 0.34 : 0) + (ix % 3) * 0.12); } wallGeo.computeVertexNormals();
+  const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({ map: backdropTex, bumpMap: fibre(1.6, false), bumpScale: 0.1, roughness: 0.96, flatShading: true })); wall.position.set(0, 7.6, -7.6); wall.receiveShadow = true; scene.add(wall);
+  const floorGeo = new THREE.PlaneGeometry(64, 34, 1, 7); const fp = floorGeo.attributes.position; for (let i = 0; i < fp.count; i++) { const iy = Math.round((fp.getY(i) + 17) / (34 / 7)); fp.setZ(i, (iy % 2 ? 0.1 : 0)); } floorGeo.computeVertexNormals();
+  const floor = new THREE.Mesh(floorGeo, new THREE.MeshStandardMaterial({ map: backdropTex, bumpMap: fibre(1.6, false), bumpScale: 0.1, roughness: 0.96, flatShading: true })); floor.rotation.x = -Math.PI / 2; floor.position.set(0, -6.2, 6); floor.receiveShadow = true; scene.add(floor);
+
+  /* ---------- mesa (índigo), gavetas e mesa em camadas de papel ---------- */
+  const mInd = paper(C.indigo, { rep: 3 }), mIndD = paper(C.indigoDeep, { rep: 3 }), mIndL = paper(C.indigoLite, { rep: 2 }), mVer = paper(C.vermil, { rep: 2 }), mKr = paper(C.kraft, { rep: 2 }), mKrD = paper(C.kraftDk, { rep: 2 }), mCr = paper(C.cream, { rep: 2 }), mMu = paper(C.mustard, { rep: 2 });
+  const desk = new THREE.Group(); scene.add(desk);
+  add(desk, edge(box(19, 0.6, 7.2, mInd)), 0, -0.3, 1.8);                              // tampo
+  [[-8.8, 1.7], [8.8, 1.7]].forEach(([x]) => add(desk, edge(box(0.5, 5.4, 6.6, mIndD)), x, -3.3, 1.8)); // pés laterais
+  add(desk, edge(box(4.2, 5.0, 6.4, mIndD)), 6.2, -3.1, 1.8);                          // gaveteiro
+  [-2.1, -4.4].forEach((y) => { add(desk, edge(box(3.8, 2.1, 0.12, mInd)), 6.2, y + 0.1, 5.05); add(desk, box(1.0, 0.18, 0.2, mKr), 6.2, y + 0.55, 5.18); });
+  add(desk, box(19, 0.08, 0.5, mVer), 0, -0.56, 5.3, false);                           // friso vermelhão na borda
+  // caixas de papelão sob a mesa
+  const cardbox = (x, z, r, s = 1) => { const g = new THREE.Group(); add(g, edge(box(2.6 * s, 1.8 * s, 2.2 * s, mKr), 0x4A3218, 0.3), 0, 0.9 * s, 0); const f1 = add(g, edge(box(1.2 * s, 0.05, 2.2 * s, mKrD), 0x4A3218, 0.3), -0.7 * s, 1.85 * s, 0); f1.rotation.z = 0.55; const f2 = add(g, edge(box(1.2 * s, 0.05, 2.2 * s, mKrD), 0x4A3218, 0.3), 0.7 * s, 1.85 * s, 0); f2.rotation.z = -0.4; g.position.set(x, -6.2, z); g.rotation.y = r; scene.add(g); };
+  cardbox(-5.5, 2.2, 0.3); cardbox(-3.2, 4.4, -0.5, 0.75); cardbox(8.6, 6.5, 0.6, 0.8);
+  // bolas de papel amassado
+  const crumple = (x, y, z, col, r = 0.34) => { const g = new THREE.IcosahedronGeometry(r, 1); const p = g.attributes.position; for (let i = 0; i < p.count; i++) { const k = 0.82 + rnd() * 0.4; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k, p.getZ(i) * k); } g.computeVertexNormals(); const m = new THREE.Mesh(g, paper(col, { flat: true, rep: 1 })); add(scene, m, x, y, z); m.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3); return m; };
+  crumple(-6.4, 0.3, 3.3, C.vermil); crumple(2.4, 0.3, 3.9, C.vermil, 0.3); crumple(-2.8, 0.28, 3.4, C.cream, 0.26); crumple(-4.7, -5.9, 5.0, C.vermil); crumple(1.5, -5.9, 7.4, C.cream, 0.3); crumple(7.5, 0.28, 3.0, C.vermil, 0.28);
+  // pilha de papéis
+  for (let i = 0; i < 18; i++) { const m = [mVer, mKr, mMu, mCr, mKrD][i % 5]; const s = add(desk, box(2.0 + rnd() * 0.4, 0.05, 2.5 + rnd() * 0.3, m), -6.6 + rnd() * 0.25, 0.03 + i * 0.058, 2.0 + rnd() * 0.25); s.rotation.y = (rnd() - 0.5) * 0.7; }
+  [[-5.2, 0.9], [-7.4, 3.6]].forEach(([x, z]) => { for (let i = 0; i < 7; i++) { const m = [mVer, mMu, mKr][i % 3]; const s = add(desk, box(1.6, 0.04, 2.0, m), x + rnd() * 0.2, 0.03 + i * 0.05, z + rnd() * 0.2); s.rotation.y = (rnd() - 0.5) * 1.0; } });
+  // teclado de papelão e mouse
+  add(desk, edge(box(5.4, 0.2, 1.9, mKr), 0x4A3218, 0.3), 0.2, 0.1, 3.2);
+  const keys = new THREE.InstancedMesh(new THREE.BoxGeometry(0.36, 0.1, 0.3), paper(C.kraftDk, { rep: 1 }), 5 * 14); const dm = new THREE.Object3D(); let ki = 0;
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 14; c++) { dm.position.set(-2.35 + c * 0.38, 0.27, 2.55 + r * 0.33); dm.updateMatrix(); keys.setMatrixAt(ki++, dm.matrix); } keys.castShadow = true; keys.receiveShadow = true; desk.add(keys);
+  const mouse = add(desk, new THREE.Mesh(new THREE.SphereGeometry(0.42, 7, 5), mKr), 3.7, 0.2, 3.3); mouse.scale.set(1, 0.5, 1.4);
+  const cable = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(3.7, 0.12, 2.8), new THREE.Vector3(3.9, 0.06, 1.7), new THREE.Vector3(3.2, 0.06, 0.9), new THREE.Vector3(1.3, 0.06, 0.4)]), 24, 0.045, 5), mIndD); cable.castShadow = true; scene.add(cable);
+  // abajur vermelhão
+  add(desk, box(1.1, 0.12, 1.1, mVer), -7.6, 0.06, 2.6); add(desk, limb([-7.6, 0.1, 2.6], [-7.6, 2.3, 2.6], 0.14, mVer), 0, 0, 0); add(desk, limb([-7.6, 2.3, 2.6], [-6.4, 3.2, 2.6], 0.14, mVer), 0, 0, 0);
+  const shade = add(desk, new THREE.Mesh(new THREE.ConeGeometry(0.8, 0.9, 4, 1, true), new THREE.MeshStandardMaterial({ color: C.vermil, side: THREE.DoubleSide, emissive: 0xFF8A4D, emissiveIntensity: 0.5 })), -6.1, 3.0, 2.6); shade.rotation.set(0, Math.PI / 4, -0.9);
+
+  /* ---------- monitor ultrawide em papel dobrado ---------- */
+  const mon = new THREE.Group(); scene.add(mon);
+  const MW = 13.2, MH = 5.2, MY = 3.3;
+  add(mon, edge(box(MW + 0.5, MH + 0.5, 0.5, mIndD)), 0, MY, -0.35);                       // carcaça
+  [[0, MH / 2 + 0.12, MW + 0.5, 0.26], [0, -MH / 2 - 0.12, MW + 0.5, 0.26]].forEach(([x, y, w, h]) => add(mon, edge(box(w, h, 0.66, mInd)), x, MY + y, -0.2));
+  [[-MW / 2 - 0.12, 0.26, MH + 0.5], [MW / 2 + 0.12, 0.26, MH + 0.5]].forEach(([x, w, h]) => add(mon, edge(box(w, h, 0.66, mInd)), x, MY, -0.2));
+  add(mon, box(MW, MH, 0.1, paper(0x0E1040, { rep: 4 })), 0, MY, 0.0);                     // fundo da tela
+  add(mon, edge(box(0.9, 1.1, 0.4, mVer)), 0, 0.52, -0.5);                                  // pescoço vermelhão
+  add(mon, edge(box(4.6, 0.12, 2.6, mKr), 0x4A3218, 0.3), 0, 0.06, -0.2);                   // base de papelão
+  // janelas empilhadas com profundidade
+  const WINS = [[-3.2, 3.5, 0.14, 5.6, 4.1], [-1.4, 3.35, 0.38, 5.8, 3.9], [0.5, 3.2, 0.62, 5.6, 3.7], [2.2, 3.1, 0.86, 5.4, 3.5], [4.7, 2.2, 0.3, 3.3, 2.0]];
+  const mDot = [paper(C.mustard), paper(C.green), paper(C.cream)];
+  const allLines = []; const alerts = [];
+  WINS.forEach(([x, y, z, w, h], wi) => {
+    const g = new THREE.Group(); g.position.set(x, y, z); mon.add(g);
+    add(g, edge(box(w, h, 0.08, mVer)), 0, 0, 0);
+    add(g, box(w - 0.34, h - 0.62, 0.09, mIndD), 0, -0.16, 0.02);
+    [0, 1, 2].forEach((d) => { const dot = add(g, new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.05, 10), mDot[d]), -w / 2 + 0.32 + d * 0.22, h / 2 - 0.2, 0.06); dot.rotation.x = Math.PI / 2; });
+    const rows = Math.floor((h - 0.9) / 0.17), iw = w - 0.8; if (wi === 4) return;
+    for (let r = 0; r < rows; r++) { let cx = -iw / 2 + 0.14 + (rnd() < 0.5 ? 0 : 0.3 * (1 + (rnd() * 3 | 0))); const y = h / 2 - 0.78 - r * 0.17; const segs = 1 + (rnd() * 4 | 0); for (let s = 0; s < segs; s++) { const len = 0.35 + rnd() * 1.5; if (cx + len > iw / 2) break; const alert = rnd() < 0.07; allLines.push({ x: x + cx + len / 2, y: y + (y * 0) + (g.position.y - 0), z: z + 0.1, w: len, alert, wi, r }); cx += len + 0.16; } }
+  });
+  // terminal à direita (> _)
+  const term = new THREE.Group(); term.position.set(4.7, 2.2, 0.3); mon.add(term);
+  add(term, box(0.7, 0.1, 0.05, paper(C.lav)), -0.9, 0.5, 0.1); add(term, box(0.6, 0.1, 0.05, paper(C.vermil)), -0.95, 0.2, 0.1);
+  // linhas de código em instâncias (uma única chamada de desenho)
+  const lineMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.085, 0.05), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92 }), allLines.length);
+  const palette = [C.vermil, C.vermil, C.kraft, C.lav, C.cream, C.lav, C.kraft].map((c) => new THREE.Color(c));
+  const hot = new THREE.Color(C.vermilHot), base = new THREE.Color(C.vermil), colArr = []; const tmpC = new THREE.Color();
+  allLines.forEach((l, i) => { dm.position.set(l.x, l.y - (WINS[l.wi][1] - WINS[l.wi][1]) , l.z + 0.02); dm.scale.set(l.w, 1, 1); dm.updateMatrix(); lineMesh.setMatrixAt(i, dm.matrix); const c = l.alert ? base : palette[(rnd() * palette.length) | 0]; lineMesh.setColorAt(i, c); if (l.alert) alerts.push(i); });
+  lineMesh.castShadow = false; lineMesh.receiveShadow = true; mon.add(lineMesh); dm.scale.set(1, 1, 1);
+  // bandeirinhas de alerta (papel dobrado) saindo das janelas
+  const flags = [];
+  [[-5.9, 4.9, 0.5], [-1.2, 5.55, 0.9], [2.9, 5.0, 1.0], [5.5, 3.4, 1.1], [-5.8, 2.1, 0.35], [0.3, 1.45, 0.8]].forEach(([x, y, z], i) => {
+    const g = new THREE.Group(); const t = add(g, edge(new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.85, 3), paper(i % 2 ? C.mustard : C.vermil, { flat: true })), 0x3A1008, 0.35)); t.rotation.set(Math.PI / 2, 0, i * 0.8); g.position.set(x, y, z); mon.add(g); flags.push(g); });
+  // post-its (sem texto)
+  [[-6.9, 4.6, 0.9, C.vermil, 0.12], [-6.95, 3.3, 0.9, C.mustard, -0.1], [7.0, 4.3, 0.9, C.mustard, -0.08], [7.0, 2.6, 0.9, C.vermil, 0.14], [-6.8, 1.55, 0.9, C.vermil, -0.12]].forEach(([x, y, z, col, r], i) => {
+    const g = new THREE.Group(); add(g, edge(box(1.15, 1.15, 0.04, paper(col)), 0x3A1008, 0.25), 0, 0, 0); for (let k = 0; k < 3; k++) add(g, box(0.6 - k * 0.1, 0.045, 0.02, paper(C.indigoDeep)), -0.1, 0.25 - k * 0.2, 0.03); g.position.set(x, y, z + 0.06); g.rotation.z = r; mon.add(g); });
+  // brilho aditivo vermelhão na frente da tela
+  const glowTex = new THREE.CanvasTexture(cv(256, 256, (g, w, h) => { const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); gr.addColorStop(0, "rgba(255,110,60,.9)"); gr.addColorStop(0.5, "rgba(255,70,40,.25)"); gr.addColorStop(1, "rgba(255,60,30,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); }));
+  const glowSpr = new THREE.Mesh(new THREE.PlaneGeometry(18, 9), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.35 })); glowSpr.position.set(-0.5, MY, 1.6); scene.add(glowSpr);
+
+  /* ---------- cadeira ---------- */
+  const chair = new THREE.Group(); chair.position.x = -0.9; scene.add(chair);
+  add(chair, edge(box(3.6, 0.45, 3.4, mIndL)), -1.1, -1.0, 5.3); add(chair, edge(box(3.2, 2.5, 0.4, mIndL)), -1.1, 0.5, 7.0).rotation.x = -0.1;
+  add(chair, box(0.34, 3.2, 0.34, mIndD), -1.1, -3.0, 5.3);
+  for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2 + 0.3, leg = limb([-1.1, -4.5, 5.3], [-1.1 + Math.cos(a) * 2.3, -5.7, 5.3 + Math.sin(a) * 2.3], 0.28, mIndD); leg.castShadow = true; chair.add(leg); const w = add(chair, new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.25, 8), mKr), -1.1 + Math.cos(a) * 2.3, -5.95, 5.3 + Math.sin(a) * 2.3); w.rotation.z = Math.PI / 2; }
+
+  /* ---------- o desenvolvedor: recortes de papel em camadas, visto de costas ---------- */
+  const dev = new THREE.Group(); dev.position.set(-2.0, 0, 5.4); dev.scale.setScalar(0.88); scene.add(dev);
+  const hoodie = paper(C.indigoLite, { rep: 1.5 }), hoodieD = paper(0x2C3190, { rep: 1.5 }), hair = paper(0x1B1D58), skin = paper(0xD9A774), verBand = paper(C.vermil);
+  add(dev, edge(ext((s) => { s.moveTo(-1.55, 0); s.lineTo(-1.7, 1.9); s.quadraticCurveTo(-1.6, 2.55, -0.9, 2.7); s.lineTo(0.9, 2.7); s.quadraticCurveTo(1.6, 2.55, 1.7, 1.9); s.lineTo(1.55, 0); s.closePath(); }, 0.55, hoodie)), 0, 1.0, -0.2);
+  add(dev, edge(ext((s) => { s.moveTo(-1.1, 0); s.quadraticCurveTo(-1.5, 1.2, -0.85, 2.0); s.quadraticCurveTo(0, 2.5, 0.85, 2.0); s.quadraticCurveTo(1.5, 1.2, 1.1, 0); s.closePath(); }, 0.22, hoodieD)), 0, 1.7, 0.36);   // capuz
+  add(dev, box(0.6, 0.7, 0.4, skin), 0, 3.55, 0.05);                                                    // pescoço
+  add(dev, edge(ext((s) => { s.absellipse(0, 0, 0.78, 0.86, 0, Math.PI * 2, false); }, 0.5, hair)), 0, 4.3, -0.15);   // cabeça (cabelo, camada base)
+  add(dev, edge(ext((s) => { s.moveTo(-0.7, -0.1); s.quadraticCurveTo(-0.85, 0.7, -0.1, 0.84); s.quadraticCurveTo(0.7, 0.8, 0.72, -0.05); s.quadraticCurveTo(0.2, 0.35, -0.7, -0.1); }, 0.12, paper(0x2A2D86))), 0, 4.35, 0.32);  // mecha superior
+  add(dev, edge(ext((s) => { s.moveTo(-0.55, 0); s.quadraticCurveTo(-0.62, -0.62, 0, -0.66); s.quadraticCurveTo(0.62, -0.62, 0.55, 0); s.closePath(); }, 0.1, paper(0x14164A))), 0, 3.95, 0.34); // nuca
+  [-1, 1].forEach((sd) => { add(dev, box(0.2, 0.46, 0.12, skin), sd * 0.82, 4.15, 0.1); const cup = add(dev, new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.26, 12), verBand), sd * 0.95, 4.2, 0.12); cup.rotation.z = Math.PI / 2; });
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.07, 6, 24, Math.PI), verBand); band.position.set(0, 4.2, 0.13); band.castShadow = true; dev.add(band);
+  [-1, 1].forEach((sd) => { // braços até o teclado
+    const sh = [sd * 1.5, 2.9, -0.1], el = [sd * 1.9, 1.7, -1.9], hd = [sd * 0.8, 0.6, -3.1];
+    dev.add(Object.assign(limb(sh, el, 0.62, hoodie), { castShadow: true })); dev.add(Object.assign(limb(el, hd, 0.52, hoodieD), { castShadow: true }));
+    add(dev, edge(box(0.62, 0.22, 0.7, skin)), hd[0], hd[1] - 0.05, hd[2] - 0.35); });
+
+  /* ---------- câmera: sobre o ombro → direto ao centro da tela → preto ---------- */
+  const S = { px: 3.4, py: 5.8, pz: 15.5, tx: -0.2, ty: 3.0, tz: 0, fov: 31, roll: 0.0, dim: 0 };
+  const tl = gsap.timeline({ paused: true });
+  tl.to(S, { px: 3.0, py: 5.5, pz: 13.6, fov: 31, duration: 1.5, ease: "sine.out" }, 0)
+    .to(S, { px: 0.2, py: 3.3, pz: 0.9, tx: 0, ty: 3.25, fov: 52, roll: -0.025, duration: 3.8, ease: "power2.in" }, 1.4)
+    .to(S, { pz: 0.28, fov: 58, duration: 0.7, ease: "power1.out" }, 5.2)
+    .to(S, { dim: 1, duration: 0.9, ease: "power2.in" }, 5.2)
+    .to({}, { duration: 0.001 }, DUR);
+  const black = document.getElementById("black");
+
+  function frame() {
+    const t = tl.time();
+    camera.position.set(S.px, S.py, S.pz); camera.fov = S.fov; camera.updateProjectionMatrix(); camera.lookAt(S.tx, S.ty, S.tz); camera.rotation.z += S.roll;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 6.2), fl = 0.9 + 0.1 * Math.sin(t * 23) * Math.sin(t * 7.1);
+    alerts.forEach((i, k) => { const p = 0.5 + 0.5 * Math.sin(t * 6.2 + k * 1.3); tmpC.copy(base).lerp(hot, p); lineMesh.setColorAt(i, tmpC); }); lineMesh.instanceColor.needsUpdate = true;
+    flags.forEach((f, i) => { const p = 0.5 + 0.5 * Math.sin(t * 6.2 + i * 1.7); f.scale.setScalar(0.92 + 0.22 * p); f.rotation.z = Math.sin(t * 3 + i) * 0.08; });
+    const k = 1 - S.dim; glowR.intensity = (1.7 + 1.0 * pulse) * fl * k; glowI.intensity = 1.6 * k; glowSpr.material.opacity = (0.22 + 0.2 * pulse) * k;
+    key.intensity = 1.7 * k; rim.intensity = 0.9 * k; hemi.intensity = 0.55 * k; lamp.intensity = 9 * k;
+    scene.background.setRGB(0.043 * k, 0.039 * k, 0.149 * k);
+    dev.rotation.z = Math.sin(t * 0.9) * 0.012; dev.children[3].rotation.z = 0; // respiração sutil
+    black.style.opacity = String(clamp((t - 5.7) / 0.5));
+    renderer.render(scene, camera);
+  }
+  const resize = () => { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; frame(); };
+  addEventListener("resize", resize);
+  const bar = document.getElementById("bar"), tm = document.getElementById("tm"), btn = document.getElementById("play"); let playing = true;
+  gsap.ticker.add(() => { if (!playing) return; let t = tl.time() + gsap.ticker.deltaRatio() / 60; if (t >= DUR + 0.8) t = 0; tl.time(Math.min(t, DUR)); frame(); bar.value = (Math.min(t, DUR) / DUR) * 1000; tm.textContent = Math.min(t, DUR).toFixed(1) + " s"; });
+  bar.addEventListener("input", () => { playing = false; btn.textContent = "▶ Reproduzir"; tl.time((bar.value / 1000) * DUR); frame(); tm.textContent = tl.time().toFixed(1) + " s"; });
+  btn.addEventListener("click", () => { playing = !playing; btn.textContent = playing ? "⏸ Pausar" : "▶ Reproduzir"; });
+  if (/clean/.test(location.search)) document.body.classList.add("clean");
+  // grão de papel (textura de ruído) como overlay
+  document.getElementById("grain").style.backgroundImage = `url(${cv(256, 256, (g, w, h) => { const im = g.createImageData(w, h); for (let i = 0; i < im.data.length; i += 4) { const v = 110 + rnd() * 70; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; } g.putImageData(im, 0, 0); }).toDataURL()})`;
+  window.__sw = { set: (p) => { playing = false; tl.time(p * DUR); frame(); } };
+  resize(); tl.time(0); frame();
+})();
+</script>
+</body>
+</html>

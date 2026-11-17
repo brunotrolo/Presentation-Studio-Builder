@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "slides": {
+    "s01": { "speed": 1, "theme": "dark", "hidden": false, "pauses": [{ "t": 3.2, "hold": 0.8, "mode": "auto" }], "ramps": [] },
+    "s02": { "speed": 1, "theme": "light", "hidden": false, "pauses": [{ "t": 3.0, "hold": 0, "mode": "manual" }], "ramps": [{ "from": 0.9, "to": 3.0, "speed": 0.85 }] },
+    "s03": { "speed": 1, "theme": "light", "hidden": true, "pauses": [], "ramps": [] }
+  }
+}

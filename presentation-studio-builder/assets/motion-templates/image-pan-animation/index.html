@@ -1,0 +1,108 @@
+<!doctype html>
+<!-- TEMPLATE image-pan-animation: ilustração única (arte.jpg, 2400 px de largura) animada por câmera 2D (panorâmica + zoom), fitas de luz, cubos na esteira e brilhos.
+     Coloque a arte em arte.jpg, ajuste K (relação arte exibida/original), RIBBONS, BELT e a câmera. Veja README.md desta pasta. -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Exemplo B · ilustração animada em código</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+html, body { margin:0; height:100%; overflow:hidden; background:#E9DDC3; font-family:Consolas,monospace; }
+.stage { position:absolute; left:50%; top:50%; width:1920px; height:1080px; margin:-540px 0 0 -960px; transform:scale(var(--s,1)); overflow:hidden; background:#EADFC6; }
+/* o mundo tem o tamanho da arte original (2400 x 1488, sem as legendas) */
+#world { position:absolute; left:0; top:0; width:2400px; height:1488px; transform-origin:0 0; will-change:transform; }
+#world img { position:absolute; left:0; top:0; width:2400px; height:1792px; max-width:none; display:block; clip-path:inset(0 0 304px 0); }
+#fx { position:absolute; left:0; top:0; width:2400px; height:1488px; mix-blend-mode:screen; }
+.glow { position:absolute; border-radius:50%; mix-blend-mode:screen; pointer-events:none; background:radial-gradient(closest-side, rgba(120,220,255,.85), rgba(60,160,255,.35) 55%, transparent 100%); }
+.glow.g { background:radial-gradient(closest-side, rgba(110,255,170,.8), rgba(40,200,110,.3) 55%, transparent 100%); }
+#sweep { position:absolute; inset:0; pointer-events:none; mix-blend-mode:soft-light; background:linear-gradient(100deg, transparent 30%, rgba(255,236,190,.55) 50%, transparent 70%); width:900px; height:1488px; }
+#vig { position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse at center, transparent 60%, rgba(60,40,10,.28) 100%); }
+#ui { position:fixed; left:0; right:0; bottom:0; padding:10px 20px 14px; display:flex; gap:16px; align-items:center; font:600 14px Consolas,monospace; z-index:50; background:linear-gradient(transparent,rgba(0,0,0,.55)); color:#fff; }
+#ui input { flex:1; accent-color:#00A1FC; } #ui button { background:#00A1FC; border:0; padding:8px 14px; font:700 14px Consolas,monospace; border-radius:3px; cursor:pointer; color:#000; }
+body.clean #ui { display:none; }
+.dbg path { stroke:#f0f !important; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div id="world">
+    <img src="arte.jpg" alt="">
+    <svg id="fx" viewBox="0 0 2400 1488">
+      <defs>
+        <filter id="blur"><feGaussianBlur stdDeviation="7"/></filter>
+        <linearGradient id="cy" x1="0" x2="1"><stop offset="0" stop-color="#7FE8FF"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient>
+      </defs>
+      <g id="paths" fill="none" stroke-linecap="round"></g>
+      
+    </svg>
+    <svg id="fx2" viewBox="0 0 2400 1488" style="position:absolute;left:0;top:0;width:2400px;height:1488px"><g id="cubes"></g></svg>
+    <div id="glows"></div>
+    <div id="sweep"></div>
+  </div>
+  <div id="vig"></div>
+</div>
+<div id="ui"><button id="play">⏸ Pausar</button><input id="bar" type="range" min="0" max="1000" value="0"><span id="tm">0.0 s</span><span>exemplo B · 16 s em loop · ?clean esconde a barra · ?debug mostra os trajetos</span></div>
+<script src="vendor/gsap.min.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s), NS = "http://www.w3.org/2000/svg", K = 1.2, DUR = 16;
+  const fit = () => $("#stage").style.setProperty("--s", Math.min(innerWidth / 1920, innerHeight / 1080)); addEventListener("resize", fit); fit();
+  const D = (x, y) => [x * K, y * K];
+  const P = (pts) => { // pontos em coordenadas da arte exibida (2000 px) → coordenadas do mundo (2400 px)
+    const q = pts.map(([x, y]) => D(x, y)); let d = `M${q[0][0]} ${q[0][1]}`; for (let i = 1; i < q.length; i += 3) d += ` C${q[i][0]} ${q[i][1]} ${q[i + 1][0]} ${q[i + 1][1]} ${q[i + 2][0]} ${q[i + 2][1]}`; return d; };
+  if (/debug/.test(location.search)) document.body.classList.add("dbg");
+
+  /* ---- fitas de dados: brilho que corre ao longo das fitas da arte ---- */
+  const RIBBONS = [
+    { id: "r1", d: P([[790, 480], [900, 470], [990, 520], [1040, 600]]), w: 7, dash: 120 },
+    { id: "r2", d: P([[1330, 515], [1290, 560], [1240, 600], [1200, 650]]), w: 7, dash: 110 },
+    { id: "r3", d: P([[740, 590], [900, 690], [1010, 790], [1130, 880], [1250, 960], [1400, 990], [1650, 845]]), w: 9, dash: 170 },
+    { id: "r4", d: P([[1850, 640], [1900, 610], [1950, 575], [2010, 535]]), w: 9, dash: 140 },
+  ];
+  const gp = $("#paths"), dashes = [];
+  RIBBONS.forEach((r) => {
+    ["glow", "core"].forEach((k) => { const p = document.createElementNS(NS, "path"); p.setAttribute("d", r.d); p.setAttribute("stroke", k === "glow" ? "#5FD0FF" : "#FFFFFF"); p.setAttribute("stroke-width", k === "glow" ? r.w * 2.4 : r.w * 0.55); p.setAttribute("opacity", k === "glow" ? 0.55 : 0.95); if (k === "glow") p.setAttribute("filter", "url(#blur)"); gp.appendChild(p); const L = p.getTotalLength(); p.style.strokeDasharray = `${r.dash} ${L}`; p.style.strokeDashoffset = r.dash; dashes.push({ p, L, dash: r.dash, ph: Math.random() }); });
+  });
+
+  /* ---- cubos de papel correndo na esteira ---- */
+  const BELT = P([[955, 835], [1100, 880], [1230, 940], [1330, 1000], [1430, 1045], [1500, 1050], [1560, 1050], [1650, 975], [1700, 920], [1740, 880]]);
+  const bp = document.createElementNS(NS, "path"); bp.setAttribute("d", BELT); bp.setAttribute("fill", "none"); $("#cubes").appendChild(bp); const BL = bp.getTotalLength();
+  const CUBE_COLORS = [["#E8503A", "#C23A28", "#FF7A60"], ["#2B6BE8", "#1F4FB8", "#5C92FF"], ["#2ECC71", "#1FA057", "#6BE89B"], ["#F2B632", "#C48F1A", "#FFD36A"]];
+  const cubes = CUBE_COLORS.concat(CUBE_COLORS).map((c, i) => { const g = document.createElementNS(NS, "g"); const s = 30;
+    g.innerHTML = `<path d="M0 ${-s} L${s * 0.9} ${-s * 0.5} L0 0 L${-s * 0.9} ${-s * 0.5} Z" fill="${c[2]}"/><path d="M${-s * 0.9} ${-s * 0.5} L0 0 L0 ${s * 0.9} L${-s * 0.9} ${s * 0.4} Z" fill="${c[1]}"/><path d="M${s * 0.9} ${-s * 0.5} L0 0 L0 ${s * 0.9} L${s * 0.9} ${s * 0.4} Z" fill="${c[0]}"/>`;
+    $("#cubes").appendChild(g); return { g, off: i / 8 }; });
+
+  /* ---- luzes pulsando nos monitores ---- */
+  const GL = [[740, 440, 260, 0], [1010, 380, 260, 1], [1300, 420, 220, 0.5], [1640, 700, 700, 0.2], [1190, 760, 200, 1.2, "g"]];
+  const glows = GL.map(([x, y, w, ph, k]) => { const d = document.createElement("div"); d.className = "glow" + (k ? " " + k : ""); const [wx, wy] = D(x, y); d.style.cssText = `left:${wx - w / 2}px;top:${wy - w / 2}px;width:${w}px;height:${w}px;`; $("#glows").appendChild(d); return { d, ph }; });
+
+  /* ---- câmera: panorâmica e zoom sobre a ilustração ---- */
+  const cam = { x: 380, y: 560, z: 1.25 };
+  const apply = () => { $("#world").style.transform = `translate(${960 - cam.x * K * cam.z}px,${540 - cam.y * K * cam.z}px) scale(${cam.z})`; };
+  const tl = gsap.timeline({ paused: true, defaults: { ease: "sine.inOut" } });
+  tl.to(cam, { x: 400, y: 600, z: 1.38, duration: 3.4 }, 0)                      // mesa do dev
+    .to(cam, { x: 1010, y: 640, z: 1.2, duration: 3.2 }, 3.4)                    // sala dos agentes
+    .to(cam, { x: 1130, y: 760, z: 1.45, duration: 2.6 }, 6.6)                   // segue a esteira
+    .to(cam, { x: 1620, y: 740, z: 1.9, duration: 2.8 }, 9.2)                    // operadora
+    .to(cam, { x: 1000, y: 700, z: 0.8, duration: 4.0, ease: "power2.inOut" }, 12.0); // visão geral
+
+  function render() {
+    const t = tl.time(); apply();
+    dashes.forEach((o, i) => { const k = ((t * 0.55 + o.ph * 0.0 + i * 0.37) % 1.2) / 1.2; o.p.style.strokeDashoffset = o.dash - k * (o.L + o.dash); });
+    cubes.forEach((c) => { let k = ((t * 0.09 + c.off) % 1); const pt = bp.getPointAtLength(k * BL); c.g.setAttribute("transform", `translate(${pt.x} ${pt.y - 6})`); c.g.setAttribute("opacity", k > 0.9 ? (1 - k) * 10 : k < 0.06 ? k / 0.06 : 1); });
+    glows.forEach((g) => { g.d.style.opacity = 0.06 + 0.2 * (0.5 + 0.5 * Math.sin(t * 2.2 + g.ph * 3)); });
+    $("#sweep").style.transform = `translateX(${((t / DUR) * 4200 - 1200)}px)`;
+  }
+  tl.eventCallback("onUpdate", render);
+  const bar = $("#bar"), tm = $("#tm"), btn = $("#play"); let playing = true;
+  gsap.ticker.add(() => { if (!playing) return; let t = tl.time() + gsap.ticker.deltaRatio() / 60; if (t >= DUR + 0.8) t = 0; tl.time(Math.min(t, DUR)); render(); bar.value = (Math.min(t, DUR) / DUR) * 1000; tm.textContent = Math.min(t, DUR).toFixed(1) + " s"; });
+  bar.addEventListener("input", () => { playing = false; btn.textContent = "▶ Reproduzir"; tl.time((bar.value / 1000) * DUR); render(); tm.textContent = tl.time().toFixed(1) + " s"; });
+  btn.addEventListener("click", () => { playing = !playing; btn.textContent = playing ? "⏸ Pausar" : "▶ Reproduzir"; });
+  if (/clean/.test(location.search)) document.body.classList.add("clean");
+  window.__sw = { set: (p) => { playing = false; tl.time(p * DUR); render(); } };
+  tl.time(0); render();
+})();
+</script>
+</body>
+</html>

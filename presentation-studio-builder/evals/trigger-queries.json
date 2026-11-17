@@ -1,0 +1,22 @@
+{
+  "skill_name": "presentation-studio-builder",
+  "_comentario": "Teste de ativação: should_trigger deve carregar a skill; should_not_trigger são pedidos próximos que não são dela. Meta: ≥90% e ≤10%.",
+  "should_trigger": [
+    "Monta uma apresentação ao vivo de 15 minutos sobre os resultados do time, com visual de agência e animações",
+    "Preciso de um deck animado em HTML para um pitch, tem que rodar offline no projetor",
+    "quero abrir a apresentação com um voo de câmera 3D estilo origami, dev no PC e a câmera entrando na tela",
+    "Cria o roteiro de fala de cada slide da minha apresentação pra eu gerar o áudio e ensaiar",
+    "Build an animated presentation for our board meeting, scrollytelling style, with a studio mode to tune pacing",
+    "Faz uma cena de papel recortado cinematográfica para a abertura do meu evento",
+    "me ajuda a estruturar os atos e o tempo de cada slide de uma apresentação de 20 minutos com muito impacto visual"
+  ],
+  "should_not_trigger": [
+    "Cria um arquivo .pptx com 10 slides sobre vendas para eu abrir no PowerPoint",
+    "Resume este PDF de 30 páginas em um documento Word",
+    "Monta um gráfico de barras com estes números de vendas",
+    "Faz uma landing page responsiva para o meu produto",
+    "Traduz o texto destes slides para inglês",
+    "Escreve um e-mail para a diretoria sobre os resultados do semestre",
+    "Explique o que é GSAP e quando usar ScrollTrigger"
+  ]
+}

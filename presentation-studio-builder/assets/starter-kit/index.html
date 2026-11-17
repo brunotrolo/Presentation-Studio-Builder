@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Título da apresentação</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/studio.css">
+  <link rel="stylesheet" href="css/slides.css">
+</head>
+<body>
+<div class="viewport">
+  <div class="stage" id="stage">
+
+    <!-- Fundos em camadas: o tema do slide (dark | light | paper) só troca a opacidade -->
+    <div class="bg" aria-hidden="true">
+      <div class="bg__dark"><div class="bg__glow"></div><div class="bg__glow2"></div><div class="bg__grid"></div></div>
+      <div class="bg__light"></div>
+      <div class="bg__paper"></div>
+    </div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <!-- HUD: marca (texto ou <img>) + seção atual -->
+    <header class="hud">
+      <div class="hud__brand"><div class="hud__product">Marca · Produto</div></div>
+      <div class="hud__act" id="hudAct"></div>
+    </header>
+
+    <div class="slides"></div>
+
+    <!-- Rodapé: paginação "n / total" + cue de pausa manual -->
+    <footer class="foot">
+      <div id="footNum"></div>
+      <div class="foot__right"><span class="next-cue"><span class="kbd">→</span> continuar</span><span id="footAct"></span></div>
+    </footer>
+
+  </div>
+</div>
+
+<script src="vendor/gsap.min.js"></script>
+<script>window.PSB_CONFIG = { storageKey: "psb.minha-apresentacao.v1", sectionLabel: "Seção", sectionTotal: "", glow: {} };</script>
+<script src="js/kit.js"></script>
+<script src="js/slides/example.js"></script>
+<script src="js/preset-default.js"></script>
+<script src="js/engine.js"></script>
+</body>
+</html>

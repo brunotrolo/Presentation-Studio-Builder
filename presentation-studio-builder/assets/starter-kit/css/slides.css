@@ -1,0 +1,30 @@
+/* slides.css — estilos dos slides. Prefixe cada slide com a sua classe (.ex-open, .ex-flow ...) para não vazar regras.
+   Grade do palco: margem 120 px, cabeçalho em top 128, conteúdo a partir de y ≈ 440, rodapé reservado de 1002 a 1080. */
+
+.vox-mark--highlight { color: var(--black); }
+.vox-mark--accent { color: var(--black); }
+.vox-mark--accent .vox-mark__bar { background: var(--accent); }
+
+/* cabeçalho compartilhado */
+.ex-head { position: absolute; left: 120px; top: 128px; width: 1560px; z-index: 6; }
+.ex-head .headline { font-size: 66px; margin-top: 18px; }
+.ex-head .subhead { font-size: 27px; max-width: 920px; margin-top: 20px; }
+
+/* abertura */
+.ex-open .ex-head { top: 260px; }
+.ex-open .ex-head .headline { font-size: 88px; line-height: 1.08; }
+.ex-open .ex-chips { position: absolute; left: 120px; top: 700px; display: flex; gap: 14px; }
+
+/* problema + veredito */
+.ex-flow .ex-cards { position: absolute; left: 120px; top: 460px; width: 1560px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+.ex-card { padding: 28px 32px; min-height: 240px; }
+.ex-card b { font-size: 32px; }
+.ex-card p { margin: 12px 0 0; font-size: 22px; color: var(--muted); }
+.ex-flow .ex-stamp { position: absolute; left: 1300px; top: 780px; transform-origin: center; }
+
+/* números */
+.ex-kpirow { position: absolute; left: 120px; top: 460px; width: 1560px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+.ex-kpi { padding: 28px 32px; min-height: 300px; display: flex; flex-direction: column; justify-content: space-between; }
+.ex-kpi .v { font-weight: 800; font-size: 130px; letter-spacing: -0.045em; line-height: 0.95; color: var(--accent); }
+.ex-kpi .v small { font-size: 44px; font-weight: 700; letter-spacing: 0; margin-left: 8px; color: var(--white); }
+.ex-kpi .d { font-size: 22px; color: var(--muted); }

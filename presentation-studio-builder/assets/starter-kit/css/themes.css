@@ -1,0 +1,52 @@
+/* themes.css — três fundos por slide: dark (padrão), light e paper. O Studio troca por slide. */
+.stage { color: var(--white); }
+.bg__dark { position: absolute; inset: 0; transition: opacity 0.6s ease; }
+.bg__light { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; background: #FFFFFF; }
+.bg__light::before { content: ""; position: absolute; right: -500px; top: -700px; width: 1900px; height: 1500px; background: radial-gradient(closest-side, rgba(var(--accent-rgb), 0.13) 0%, rgba(var(--primary-rgb), 0.05) 45%, rgba(255, 255, 255, 0) 72%); }
+.bg__light::after { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(var(--primary-rgb), 0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--primary-rgb), 0.055) 1px, transparent 1px); background-size: 96px 96px; -webkit-mask-image: radial-gradient(ellipse at 75% 15%, #000 0%, rgba(0, 0, 0, 0.18) 75%); mask-image: radial-gradient(ellipse at 75% 15%, #000 0%, rgba(0, 0, 0, 0.18) 75%); }
+.stage.theme-light .bg__light { opacity: 1; }
+.stage.theme-light .bg__dark { opacity: 0; }
+body.theme-light .viewport { background: #FFFFFF; }
+.stage.theme-light { background: #FFFFFF; --white: #050B26; --muted: #4A5578; --surface: #FFFFFF; --surface-2: #EAF1FF; --shadow: 6px 6px 0 rgba(var(--primary-rgb), 0.18); --shadow-lg: 10px 10px 0 rgba(var(--primary-rgb), 0.22); }
+
+/* HUD e rodapé sobre fundo claro */
+.stage.theme-light .hud__act, .stage.theme-light .foot { color: rgba(var(--ink-rgb), 0.62); }
+.stage.theme-light .foot b, .stage.theme-light .hud__product { color: var(--ink); }
+.stage.theme-light .hud__act strong { color: var(--primary); }
+.stage.theme-light .hud__sep { background: rgba(var(--ink-rgb), 0.25); }
+.stage.theme-light .hud__logo .logo-white { opacity: 0; }
+.stage.theme-light .hud__logo .logo-color { opacity: 1; }
+.stage.theme-light .next-cue { color: var(--ink); }
+.stage.theme-light .next-cue .kbd { border-color: var(--primary); color: var(--primary); }
+
+/* tipografia e destaques */
+.stage.theme-light .eyebrow { color: var(--primary); }
+.stage.theme-light .cmd-badge { color: var(--primary); background: rgba(var(--primary-rgb), 0.08); border-color: rgba(var(--primary-rgb), 0.5); }
+.stage.theme-light .chip { border-color: rgba(var(--ink-rgb), 0.3); }
+.stage.theme-light .c-green { color: #16B05A; }
+.stage.theme-light .paper { background: #FFFFFF; border: 2.5px solid var(--ink); }
+.stage.theme-light .paper-dark { border: 2px solid rgba(var(--primary-rgb), 0.4); }
+.bg__paper { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; background: radial-gradient(ellipse at 50% 38%, rgba(255, 250, 235, 0.6), rgba(255, 250, 235, 0) 70%), url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .36  0 0 0 0 .2  0 0 0 .22 0'/></filter><rect width='100%' height='100%' filter='url(%23p)'/></svg>"), #E9E1CB; /* papel procedural: sem imagem externa */ }
+.bg__paper::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0) 55%, rgba(90, 68, 28, 0.2) 100%); }
+.stage.theme-paper .bg__paper { opacity: 1; }
+.stage.theme-paper .bg__dark { opacity: 0; }
+body.theme-paper .viewport { background: #D9D0B8; }
+.stage.theme-paper { background: #E9E1CB; --white: #17140F; --muted: #5E5646; --surface: #FBF8EF; --surface-2: #EFE8D4; --shadow: 5px 6px 0 rgba(30, 22, 8, 0.3); --shadow-lg: 9px 10px 0 rgba(30, 22, 8, 0.32); }
+.stage.theme-paper .hud__act, .stage.theme-paper .foot { color: rgba(23, 20, 15, 0.62); }
+.stage.theme-paper .foot b, .stage.theme-paper .hud__product { color: var(--ink); }
+.stage.theme-paper .hud__act strong { color: var(--primary); }
+.stage.theme-paper .hud__sep { background: rgba(23, 20, 15, 0.3); }
+.stage.theme-paper .hud__logo .logo-white { opacity: 0; }
+.stage.theme-paper .hud__logo .logo-color { opacity: 1; }
+.stage.theme-paper .next-cue { color: var(--ink); }
+.stage.theme-paper .next-cue .kbd { border-color: var(--primary); color: var(--primary); }
+.stage.theme-paper .eyebrow { color: var(--primary); }
+.stage.theme-paper .grain { opacity: 0.09; mix-blend-mode: multiply; }
+
+/* recortes de papel rasgado: a sombra vai no wrapper (o clip-path corta box-shadow) */
+.cut-wrap { position: absolute; filter: drop-shadow(6px 7px 0 rgba(30, 22, 8, 0.34)); }
+.cut { display: inline-block; position: relative; padding: 20px 46px 22px; font-weight: 800; font-size: 58px; line-height: 1.05; letter-spacing: -0.02em; white-space: nowrap; }
+.cut--paper { background: #FFFDF6; color: #17140F; }
+.cut--ink { background: #17140F; color: #F6F0DD; }
+.cut--blue { background: var(--primary); color: #FFFFFF; }
+.tape { position: absolute; z-index: 3; width: 112px; height: 34px; background: rgba(255, 244, 190, 0.7); border: 1px solid rgba(160, 138, 70, 0.4); clip-path: polygon(0 8%, 4% 0, 8% 10%, 100% 0, 96% 50%, 100% 100%, 6% 92%, 0 100%, 3% 50%); }

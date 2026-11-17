@@ -1,0 +1,129 @@
+/* base.css — palco 1920x1080, fundo, HUD, rodapé e tipografia. Gerado a partir do projeto-modelo (ver references/05-engine-and-studio.md). */
+@font-face { font-family: "Poppins"; font-weight: 300; font-display: block; src: url("../fonts/poppins-latin-300-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-weight: 400; font-display: block; src: url("../fonts/poppins-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-weight: 500; font-display: block; src: url("../fonts/poppins-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-weight: 600; font-display: block; src: url("../fonts/poppins-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-weight: 700; font-display: block; src: url("../fonts/poppins-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-weight: 800; font-display: block; src: url("../fonts/poppins-latin-800-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 400; font-display: block; src: url("../fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 700; font-display: block; src: url("../fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2"); }
+
+/* TOKENS DO TEMA — troque só os valores. Os nomes são papéis semânticos, não cores:
+   primary = cor institucional · accent = destaque/feixe/foco · glow = brilho do fundo escuro ·
+   deep = azul/tom profundo · soft = tom claro de apoio · paper = superfície clara ·
+   success/danger/highlight = aprovado / alerta / marca-texto. Os *-rgb alimentam rgba(var(--x-rgb), a). */
+:root {
+  --black: #000000;
+  --white: #FFFFFF;
+  --primary: #2D5BFF;      --primary-rgb: 45, 91, 255;
+  --accent: #00B8D9;       --accent-rgb: 0, 184, 217;
+  --glow: #4B3BFF;         --glow-rgb: 75, 59, 255;
+  --deep: #0A1A6B;         --deep-rgb: 10, 26, 107;
+  --mid: #2C3DA8;
+  --soft: #9DB8FF;
+  --paper: #F5F6F8;
+  --success: #22C55E;      --success-rgb: 34, 197, 94;
+  --danger: #EF4444;
+  --highlight: #FF7A45;    --highlight-rgb: 255, 122, 69;
+  --ink: #0B1020;          --ink-rgb: 11, 16, 32;
+  --gray: #888888;
+
+  /* derivados do palco escuro */
+  --surface: #060C2E;
+  --surface-2: #0A1450;
+  --muted: #A9B2C7;
+  --paper-2: #E6E9F0;
+  --grid-line: rgba(var(--accent-rgb), 0.08);
+
+  --font: "Poppins", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --shadow: 6px 6px 0 rgba(0, 0, 0, 0.65);
+  --shadow-lg: 10px 10px 0 rgba(0, 0, 0, 0.75);
+  --ease-hover: cubic-bezier(0.22, 1, 0.36, 1);
+  --panel-w: 0px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--black); color: var(--white); font-family: var(--font); -webkit-font-smoothing: antialiased; }
+
+/* ---------- Palco 1920x1080 ---------- */
+.viewport { position: fixed; left: 0; top: 0; bottom: 0; right: var(--panel-w); overflow: hidden; background: var(--black); }
+.stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; margin: -540px 0 0 -960px; transform: scale(var(--s, 1)); transform-origin: center center; overflow: hidden; background: var(--black); }
+
+.bg { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
+.bg__glow { position: absolute; right: -700px; top: -900px; width: 2400px; height: 2000px; will-change: transform;
+  background: radial-gradient(closest-side, rgba(var(--glow-rgb), 0.62) 0%, rgba(var(--deep-rgb), 0.42) 38%, rgba(0, 0, 0, 0) 72%); }
+.bg__glow2 { position: absolute; left: -900px; bottom: -1100px; width: 2000px; height: 1700px; will-change: transform;
+  background: radial-gradient(closest-side, rgba(var(--accent-rgb), 0.20) 0%, rgba(var(--primary-rgb), 0.10) 45%, rgba(0, 0, 0, 0) 72%); }
+.bg__grid { position: absolute; inset: 0;
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 96px 96px; -webkit-mask-image: radial-gradient(ellipse at 70% 20%, #000 0%, rgba(0,0,0,0.25) 70%); mask-image: radial-gradient(ellipse at 70% 20%, #000 0%, rgba(0,0,0,0.25) 70%); }
+.grain { position: absolute; inset: 0; z-index: 90; pointer-events: none; opacity: 0.05;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+
+/* ---------- HUD + rodapé ---------- */
+.hud { position: absolute; left: 0; right: 0; top: 0; z-index: 80; height: 96px; padding: 0 72px; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
+.hud__brand { display: flex; align-items: center; gap: 22px; }
+.hud__logo { position: relative; width: 146px; height: 34px; }
+.hud__logo img { position: absolute; left: 0; top: 0; height: 34px; width: auto; }
+.hud__logo .logo-color { opacity: 0; }
+.hud__sep { width: 2px; height: 28px; background: rgba(255, 255, 255, 0.28); }
+.hud__product { font: 600 17px var(--font); letter-spacing: 0.14em; text-transform: uppercase; color: var(--white); }
+.hud__act { font: 700 16px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.hud__act strong { color: var(--accent); font-weight: 700; }
+
+.foot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 80; height: 78px; padding: 0 72px; display: flex; align-items: center; justify-content: space-between; font: 700 16px var(--mono); letter-spacing: 0.14em; color: var(--muted); pointer-events: none; }
+.foot b { color: var(--white); font-weight: 700; }
+.foot__right { display: flex; align-items: center; gap: 22px; }
+
+.next-cue { display: inline-flex; align-items: center; gap: 12px; opacity: 0; transition: opacity 0.3s ease; color: var(--white); }
+.next-cue.show { opacity: 1; }
+.next-cue .kbd { display: inline-grid; place-items: center; min-width: 34px; height: 30px; padding: 0 8px; border: 1.5px solid var(--accent); border-bottom-width: 4px; border-radius: 5px; color: var(--accent); animation: cue 1.1s ease-in-out infinite; }
+@keyframes cue { 50% { transform: translateX(5px); } }
+
+.stage.on-paper .hud__act, .stage.on-paper .foot { color: rgba(var(--ink-rgb), 0.62); }
+.stage.on-paper .foot b, .stage.on-paper .hud__product { color: var(--ink); }
+.stage.on-paper .hud__act strong { color: var(--primary); }
+.stage.on-paper .hud__sep { background: rgba(var(--ink-rgb), 0.25); }
+.stage.on-paper .hud__logo .logo-white { opacity: 0; }
+.stage.on-paper .hud__logo .logo-color { opacity: 1; }
+
+/* ---------- Slides ---------- */
+.slides { position: absolute; inset: 0; z-index: 10; }
+.slide { position: absolute; inset: 0; visibility: hidden; opacity: 0; }
+
+.eyebrow { display: inline-flex; align-items: center; gap: 16px; font: 700 18px var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); }
+.eyebrow::before { content: ""; width: 36px; height: 2px; background: currentColor; }
+.headline { margin: 22px 0 0; font-weight: 700; font-size: 82px; line-height: 1.1; letter-spacing: -0.028em; }
+.headline .line { display: block; overflow: hidden; padding: 0.12em 0 0.16em; margin: -0.12em 0 -0.16em; }
+.headline .line > span { display: inline-block; will-change: transform; }
+.subhead { margin: 30px 0 0; max-width: 640px; font-size: 28px; line-height: 1.5; color: var(--muted); font-weight: 400; }
+.subhead b { color: var(--white); font-weight: 600; }
+
+/* marca-texto Vox (scaleX, nunca width) — cor --highlight da paleta */
+.vox-mark { position: relative; display: inline-block; white-space: nowrap; z-index: 0; }
+.vox-mark__bar { position: absolute; left: -0.1em; right: -0.1em; top: 0.16em; bottom: 0.04em; z-index: -1; background: var(--highlight); transform-origin: left center; transform: scaleX(0) skewX(-6deg); border-radius: 3px 8px 4px 7px; }
+.vox-mark--orange { color: var(--black); }
+.vox-mark--cyan { color: var(--black); }
+.vox-mark--cyan .vox-mark__bar { background: var(--accent); }
+
+.cmd-badge { display: inline-flex; align-items: center; gap: 8px; font: 700 18px var(--mono); color: var(--accent); background: rgba(var(--accent-rgb), 0.1); border: 1.5px solid rgba(var(--accent-rgb), 0.6); padding: 7px 14px; border-radius: 4px; white-space: nowrap; }
+.cmd-badge::after { content: ""; width: 0.5em; height: 1em; background: currentColor; animation: caret 1s steps(1) infinite; }
+.cmd-badge--static::after { animation: none; opacity: 0.55; }
+@keyframes caret { 50% { opacity: 0; } }
+
+.paper { position: relative; background: var(--paper); color: var(--ink); box-shadow: var(--shadow-lg); }
+.paper-dark { position: relative; background: var(--surface); border: 1.5px solid rgba(var(--accent-rgb), 0.38); box-shadow: var(--shadow); }
+
+.vox-stamp { display: inline-block; position: relative; font: 700 18px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 8px 16px; line-height: 1.15; border: 3px solid currentColor; border-radius: 5px; white-space: nowrap; }
+.vox-stamp::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.35; background-image: radial-gradient(circle at 20% 30%, var(--paper) 0 1px, transparent 1.6px), radial-gradient(circle at 70% 60%, var(--paper) 0 1px, transparent 1.7px); background-size: 9px 7px, 13px 11px; }
+.vox-stamp--alert { color: var(--danger); }
+.vox-stamp--primary { color: var(--primary); }
+.vox-stamp--ok { color: var(--black); background: var(--success); border-color: var(--black); border-style: dashed; }
+.vox-stamp--ok::after { display: none; }
+
+.chip { font: 700 15px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 12px; border: 1.5px solid rgba(169, 178, 199, 0.5); color: var(--muted); border-radius: 4px; }
+
+.big { font-weight: 800; line-height: 0.92; letter-spacing: -0.045em; }
+.big small { display: block; margin-top: 12px; font: 700 16px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.c-cyan { color: var(--accent); } .c-green { color: var(--success); } .c-white { color: var(--white); }
