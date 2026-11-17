@@ -121,7 +121,7 @@ Um **briefing**: ocasião, duração, mensagem central, resultados esperados com
 
 ```bash
 # Clone o repositório
-git clone https://github.com/brunotrolo-bank/Presentation-Studio-Builder.git
+git clone https://github.com/brunotrolo/Presentation-Studio-Builder.git
 cd Presentation-Studio-Builder
 ```
 
